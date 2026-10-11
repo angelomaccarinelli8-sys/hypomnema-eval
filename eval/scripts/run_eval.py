@@ -1,10 +1,9 @@
 import argparse
 import json
-from pathlib import Path
 import random
+from pathlib import Path
+
 import yaml
-import pandas as pd
-from tqdm import tqdm
 
 from eval.adapters import get_adapter
 from eval.metrics import exact_match, f1_token, faithfulness_heuristic
@@ -21,9 +20,9 @@ def load_toy_dataset() -> list[dict]:
         return json.load(f)
 
 
-def evaluate(samples: list[dict], adapter, config: dict) -> pd.DataFrame:
+def evaluate(samples: list[dict], adapter, config: dict) -> list[dict]:
     rows = []
-    for sample in tqdm(samples, desc="Evaluating"):
+    for sample in samples:
         pred = adapter.answer(sample, config)
         ref = sample["answer"]
         ctx = sample.get("context", "")
@@ -39,8 +38,37 @@ def evaluate(samples: list[dict], adapter, config: dict) -> pd.DataFrame:
                 "faithfulness": faithfulness_heuristic(pred, ctx),
             }
         )
+    return rows
 
-    return pd.DataFrame(rows)
+
+def write_metrics_csv(run_name: str, mode: str, suite: str, rows: list[dict], output_dir: Path):
+    total = len(rows)
+    if total == 0:
+        exact = 0.0
+        f1 = 0.0
+        faith = 0.0
+    else:
+        exact = sum(r["exact_match"] for r in rows) / total
+        f1 = sum(r["f1"] for r in rows) / total
+        faith = sum(r["faithfulness"] for r in rows) / total
+
+    metrics = {
+        "run_name": run_name,
+        "mode": mode,
+        "suite": suite,
+        "n": total,
+        "exact_match": exact,
+        "f1": f1,
+        "faithfulness": faith,
+    }
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    metrics_path = output_dir / f"metrics_{run_name}.csv"
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        fields = ["run_name", "mode", "suite", "n", "exact_match", "f1", "faithfulness"]
+        f.write(",".join(fields) + "\n")
+        f.write(",".join(str(metrics.get(field, "")) for field in fields) + "\n")
+    return metrics_path
 
 
 def main():
@@ -60,30 +88,20 @@ def main():
         raise ValueError("Only suite=toy is currently wired. Extend run_eval.py for additional public datasets.")
 
     samples = load_toy_dataset()
-    df = evaluate(samples, adapter, config)
+    rows = evaluate(samples, adapter, config)
 
     run_name = config.get("run", {}).get("run_name", "run")
+    mode = config.get("run", {}).get("mode", "unknown")
+    suite = config.get("run", {}).get("suite", "unknown")
     output_dir = Path(config.get("run", {}).get("output_dir", "eval/results"))
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     raw_path = output_dir / f"raw_{run_name}.jsonl"
+    output_dir.mkdir(parents=True, exist_ok=True)
     with open(raw_path, "w", encoding="utf-8") as f:
-        for _, row in df.iterrows():
-            f.write(json.dumps(row.to_dict(), ensure_ascii=False) + "\n")
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-    metrics = {
-        "run_name": run_name,
-        "mode": config.get("run", {}).get("mode", "unknown"),
-        "suite": config.get("run", {}).get("suite", "unknown"),
-        "n": len(df),
-        "exact_match": float(df["exact_match"].mean()),
-        "f1": float(df["f1"].mean()),
-        "faithfulness": float(df["faithfulness"].mean()),
-    }
-
-    metrics_path = output_dir / f"metrics_{run_name}.csv"
-    pd.DataFrame([metrics]).to_csv(metrics_path, index=False)
-
+    metrics_path = write_metrics_csv(run_name, mode, suite, rows, output_dir)
     print(f"Saved raw outputs to: {raw_path}")
     print(f"Saved metrics to: {metrics_path}")
 
