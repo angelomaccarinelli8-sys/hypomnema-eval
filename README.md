@@ -31,11 +31,11 @@ Edit these files:
 - `eval/configs/memory_on.yaml`
 
 Set at least:
-- `adapter_type`
+- `adapter_type` (`hypomnema_jsonl` or `echo`)
 - model parameters
 - paths and run metadata
 
-### 3) Run
+### 3) Run (toy suite)
 
 ```bash
 python -m eval.scripts.run_eval --config eval/configs/baseline.yaml --suite toy
@@ -48,6 +48,29 @@ python -m eval.scripts.aggregate_results --results-dir eval/results --out eval/r
 - raw outputs: `eval/results/raw_*`
 - metrics: `eval/results/metrics_*`
 - report summary: `eval/reports/summary.md`
+
+## Adapters
+
+### `echo` adapter
+Returns the reference answer from the sample. Useful only as smoke test for the pipeline.
+
+### `hypomnema_jsonl` adapter
+A minimal local adapter that reads memory entries from a JSONL file and retrieves by lexical overlap.
+
+Expected config keys:
+
+```yaml
+adapter:
+  adapter_type: hypomnema_jsonl
+  memory_enabled: true
+  memory_store_path: eval/datasets/hypomnema_memory.jsonl
+```
+
+Each JSONL line can include fields like:
+- `text` (preferred), or
+- `content` (fallback)
+
+This is a practical baseline integration layer and can be replaced by your production adapter.
 
 ## Notes
 

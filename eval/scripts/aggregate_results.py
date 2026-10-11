@@ -3,6 +3,9 @@ from pathlib import Path
 import pandas as pd
 
 
+METRIC_COLUMNS = ["exact_match", "f1", "faithfulness"]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--results-dir", default="eval/results")
@@ -20,14 +23,17 @@ def main():
     frames = [pd.read_csv(p) for p in metric_files]
     df = pd.concat(frames, ignore_index=True)
 
-    baseline = df[df["mode"] == "baseline"]
-    memory_on = df[df["mode"] == "memory_on"]
-
     lines = []
     lines.append("# Evaluation Summary\n")
     lines.append("## Runs\n")
-    lines.append(df.to_markdown(index=False))
+    try:
+        lines.append(df.to_markdown(index=False))
+    except Exception:
+        lines.append(df.to_string(index=False))
     lines.append("\n")
+
+    baseline = df[df["mode"] == "baseline"]
+    memory_on = df[df["mode"] == "memory_on"]
 
     if not baseline.empty and not memory_on.empty:
         b = baseline.iloc[-1]
@@ -35,9 +41,12 @@ def main():
         lines.append("## Delta (latest baseline vs latest memory_on)\n")
         lines.append("| metric | baseline | memory_on | delta |")
         lines.append("|---|---:|---:|---:|")
-        for col in ["exact_match", "f1", "faithfulness"]:
-            delta = float(m[col]) - float(b[col])
-            lines.append(f"| {col} | {float(b[col]):.4f} | {float(m[col]):.4f} | {delta:+.4f} |")
+        for col in METRIC_COLUMNS:
+            if col in b and col in m:
+                b_val = float(b[col])
+                m_val = float(m[col])
+                delta = m_val - b_val
+                lines.append(f"| {col} | {b_val:.4f} | {m_val:.4f} | {delta:+.4f} |")
         lines.append("\n")
 
     out_path.write_text("\n".join(lines), encoding="utf-8")

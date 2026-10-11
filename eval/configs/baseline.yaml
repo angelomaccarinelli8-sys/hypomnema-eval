@@ -11,8 +11,9 @@ model:
   max_tokens: 512
 
 adapter:
-  adapter_type: echo
+  adapter_type: hypomnema_jsonl
   memory_enabled: false
+  memory_store_path: eval/datasets/hypomnema_memory.jsonl
 
 meta:
   project_name: hypomnema
