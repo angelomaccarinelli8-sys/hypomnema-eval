@@ -1,0 +1,23 @@
+[
+  {
+    "id": "retrieval-1",
+    "type": "retrieval",
+    "context": "User likes Ethiopian coffee and prefers washed process.",
+    "question": "What coffee process does the user prefer?",
+    "answer": "washed"
+  },
+  {
+    "id": "memory-1",
+    "type": "conversational_memory",
+    "context": "User birthday is 12 April.",
+    "question": "When is the user's birthday?",
+    "answer": "12 April"
+  },
+  {
+    "id": "faithfulness-1",
+    "type": "faithfulness",
+    "context": "Project deadline is October 30.",
+    "question": "When is the deadline?",
+    "answer": "October 30"
+  }
+]

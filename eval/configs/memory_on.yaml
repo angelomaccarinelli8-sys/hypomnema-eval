@@ -1,0 +1,19 @@
+run:
+  run_name: memory_on_toy
+  mode: memory_on
+  suite: toy
+  output_dir: eval/results
+  seed: 42
+
+model:
+  name: placeholder-model
+  temperature: 0.0
+  max_tokens: 512
+
+adapter:
+  adapter_type: echo
+  memory_enabled: true
+
+meta:
+  project_name: hypomnema
+  notes: "Memory-enabled run"

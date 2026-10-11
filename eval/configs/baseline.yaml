@@ -1,0 +1,19 @@
+run:
+  run_name: baseline_toy
+  mode: baseline
+  suite: toy
+  output_dir: eval/results
+  seed: 42
+
+model:
+  name: placeholder-model
+  temperature: 0.0
+  max_tokens: 512
+
+adapter:
+  adapter_type: echo
+  memory_enabled: false
+
+meta:
+  project_name: hypomnema
+  notes: "Baseline run with memory disabled"
